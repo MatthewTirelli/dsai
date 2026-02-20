@@ -1,0 +1,17 @@
+graph LR
+    subgraph Setup
+        A[Load .env] --> B[Read SOCRATA_APP_TOKEN]
+        B --> C{Token present?}
+        C -->|No| D[Raise ValueError]
+        C -->|Yes| E[Build URL + params]
+    end
+
+    subgraph Request
+        E --> F[GET with X-App-Token]
+        F --> G[Parse JSON]
+    end
+
+    subgraph Output
+        G --> H[Print status, count, keys]
+        H --> I[Print first 3 records]
+    end

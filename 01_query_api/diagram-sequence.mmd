@@ -1,0 +1,12 @@
+sequenceDiagram
+    participant Script
+    participant Env
+    participant API
+
+    Script->>Env: load_dotenv()
+    Script->>Env: get SOCRATA_APP_TOKEN
+    Env-->>Script: app_token
+    Script->>API: GET nt65-c7a7.json with SoQL params
+    Note over API: SODA applies filters, returns JSON
+    API-->>Script: JSON array of records
+    Script->>Script: Print status, count, sample records

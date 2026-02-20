@@ -1,0 +1,51 @@
+---
+description: Apply when generating README.md files
+alwaysApply: true
+---
+
+# README Style Rule
+
+When generating README.md files, follow these formatting guidelines:
+
+## Overall Tone
+- Professional, clear, and concise
+- Beginner-friendly but technical
+- Use short paragraphs and bullet points where possible
+- Avoid unnecessary verbosity
+
+## Section Structure (in this order)
+1. Project Title
+2. Overview
+3. Features
+4. Requirements
+5. Installation
+6. Usage
+7. Project Structure
+8. Output (if applicable)
+
+## Headers
+- Use Markdown headers consistently
+- Main title: #
+- Sections: ##
+- Subsections: ###
+- Use Title Case for section names
+
+## Icons
+Use emojis for section headers:
+- 📌 Overview
+- ✨ Features
+- ⚙️ Requirements
+- 📦 Installation
+- 🚀 Usage
+- 📁 Project Structure
+- 📊 Output
+
+## Code Formatting
+- Always use fenced code blocks
+- Include language labels when possible (bash, python, r, etc.)
+- Show command-line examples clearly
+
+Example:
+```bash
+python api_query.py
+```
