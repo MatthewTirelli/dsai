@@ -1,48 +1,96 @@
-![Banner Image](../docs/images/icons.png)
+# HW1: Pediatric Suicide Methods Pipeline
 
-# README `/query_ai`
+## 📌 Overview
 
-> Learn to query AI models locally and in the cloud. Set up Ollama and OpenAI, then build an AI-powered data reporter.
+This project runs a fixed pipeline that fetches pediatric suicide mortality data from the CDC (Socrata), cleans and aggregates it by year, fits a Poisson regression model, and uses Ollama Cloud to generate a short written report. All steps run from a single script, `HW1.py`.
 
----
+## ✨ Features
 
-## Table of Contents
+- **Socrata (SoQL) fetch**: Pediatric suicides (age &lt; 15) from CDC injury mortality dataset, grouped by year and injury mechanism.
+- **Clean + type coercion**: Pandas-based cleaning and validation (year, total_deaths, sanity checks).
+- **Aggregation**: Sum of deaths by year for trend analysis.
+- **Poisson regression**: Count model for deaths vs. year (rate ratio per year).
+- **Structured results**: JSON results object plus AI-generated interpretation via Ollama Cloud.
+- **Quality control**: Step-wise checks and clear error messages so you can see what went wrong.
 
-- [Activities](#activities)
-- [Lab Exercise](#lab-exercise)
-- [Example Scripts](#example-scripts)
+## 📊 Pipeline Flow
 
----
+```mermaid
+flowchart LR
+  A[Socrata SoQL] --> B[Clean and coerce]
+  B --> C[Aggregate by year]
+  C --> D[Fit Poisson model]
+  D --> E[JSON results]
+  E --> F[Ollama report]
+```
 
-## Activities
+### Data Flow
 
-Complete these activities in order:
+```mermaid
+flowchart LR
+  API[CDC API response] --> DF[DataFrame]
+  DF --> Clean[Typed cleaned DataFrame]
+  Clean --> Agg[Aggregated by year]
+  Agg --> Model[Poisson GLM]
+  Model --> JSON[Results dict and JSON]
+  JSON --> Ollama[Ollama Cloud]
+  Ollama --> Report[HW1_report.md]
+```
 
-1. [ACTIVITY: Run Ollama Locally](ACTIVITY_ollama_local.md)
-   - [`01_ollama.sh`](01_ollama.sh) — Start Ollama server
-   - [`02_ollama.py`](02_ollama.py) — Python example
-   - [`02_ollama.R`](02_ollama.R) — R example
-2. [ACTIVITY: Set Up Ollama API Key](ACTIVITY_ollama_api_key.md)
-   - [`03_ollama_cloud.py`](03_ollama_cloud.py) — Python example
-   - [`03_ollama_cloud.R`](03_ollama_cloud.R) — R example
-3. [ACTIVITY: Set Up OpenAI API Key](ACTIVITY_openai_api_key.md)
-   - [`04_openai.py`](04_openai.py) — Python example
-   - [`04_openai.R`](04_openai.R) — R example
-4. [ACTIVITY: Save Reports in Different Formats](ACTIVITY_reporter_formats.md)
-   - [`05_reporting.py`](05_reporting.py) — Python example
-   - [`05_reporting.R`](05_reporting.R) — R example
-5. [LAB: Build an AI-Powered Data Reporter](LAB_ai_reporter.md)
+## ⚙️ Requirements
 
----
+- Python 3.8+
+- `.env` in the **project root** with:
+  - `SOCRATA_APP_TOKEN` (CDC Socrata app token)
+  - `OLLAMA_API_KEY` (Ollama Cloud API key)
 
-## Readings
+## 📦 Installation
 
-- None.
+From the project root (or from `03_query_ai/`):
 
----
+```bash
+pip3 install -r 03_query_ai/requirements.txt
+```
 
-![Footer Image](../docs/images/icons.png)
+If `pip3` is not found, try `python3 -m pip install -r 03_query_ai/requirements.txt`.
 
----
+Or install packages directly:
 
-← 🏠 [Back to Top](#Table-of-Contents)
+```bash
+pip3 install requests python-dotenv pandas numpy statsmodels
+```
+
+## 🚀 Usage
+
+From the **project root**:
+
+```bash
+python 03_query_ai/HW1.py
+```
+
+Or from inside `03_query_ai/`:
+
+```bash
+cd 03_query_ai
+python HW1.py
+```
+
+The script will write outputs next to `HW1.py` (in `03_query_ai/`).
+
+## 📁 Project Structure
+
+- `HW1.py` – Single script that runs the full pipeline.
+- `requirements.txt` – Python dependencies for this pipeline.
+- `README.md` – This file.
+- `SIMPLE.md` – Short launch instructions and ELI5 explanation.
+
+Outputs (created when you run the script):
+
+- `HW1_results.json` – Summary stats, aggregated data by year, and model coefficients.
+- `HW1_report.md` – AI-generated interpretation from Ollama.
+
+## 📊 Output
+
+- **Console**: Progress and the full AI report.
+- **HW1_results.json**: `summary_stats`, `aggregated_data` (year and total_deaths), and `model` (coefficient, rate_ratio, p_value).
+- **HW1_report.md**: Plain-language interpretation of the trend and findings.

@@ -39,14 +39,7 @@ Consider further investigation into Metric C variations."""
 # Extract the text content
 report_text = mock_llm_response["response"]
 
-# 1. SAVE AS PLAIN TEXT (.txt) ###################################
 
-# Write directly to a text file
-# Simple and universal format
-with open("03_query_ai/05_reporting_report.txt", "w", encoding="utf-8") as f:
-    f.write(report_text)
-
-print("✅ Saved 03_query_ai/05_reporting_report.txt")
 
 # 2. SAVE AS MARKDOWN (.md) ###################################
 
@@ -57,55 +50,5 @@ with open("03_query_ai/05_reporting_report.md", "w", encoding="utf-8") as f:
 
 print("✅ Saved 05_reporting_report.md")
 
-# 3. SAVE AS HTML (.html) ###################################
 
-# Convert markdown to HTML for web-friendly viewing
-html_content = markdown.markdown(report_text)
-
-# Wrap in basic HTML structure
-html_document = f"""<!DOCTYPE html>
-<html>
-<head>
-    <meta charset="utf-8">
-    <title>Data Analysis Report</title>
-    <style>
-        body {{ font-family: Arial, sans-serif; max-width: 800px; margin: 40px auto; padding: 20px; }}
-        h1 {{ color: #333; }}
-        h2 {{ color: #666; margin-top: 30px; }}
-    </style>
-</head>
-<body>
-{html_content}
-</body>
-</html>"""
-
-with open("03_query_ai/05_reporting_report.html", "w", encoding="utf-8") as f:
-    f.write(html_document)
-
-print("✅ Saved 05_reporting_report.html")
-    
-# 4. SAVE AS WORD DOCUMENT (.docx) ###################################
-
-# Create a Word document for professional sharing
-doc = Document()
-
-# Split content by lines and add to document
-# Handle markdown headers and formatting
-for line in report_text.split("\n"):
-    if line.startswith("# "):
-        # Main heading
-        doc.add_heading(line[2:], level=1)
-    elif line.startswith("## "):
-        # Subheading
-        doc.add_heading(line[3:], level=2)
-    elif line.startswith("- "):
-        # Bullet point
-        doc.add_paragraph(line[2:], style="List Bullet")
-    elif line.strip():
-        # Regular paragraph
-        doc.add_paragraph(line)
-
-doc.save("03_query_ai/05_reporting_report.docx")
-
-print("✅ Saved 05_reporting_report.docx")
 print("\n✅ All report formats saved successfully!")

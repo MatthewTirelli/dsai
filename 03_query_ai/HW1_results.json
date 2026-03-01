@@ -1,0 +1,89 @@
+{
+  "summary_stats": {
+    "n_years": 18,
+    "min_year": 1999,
+    "max_year": 2016,
+    "total_deaths": 41368,
+    "mean_deaths_per_year": 2298.222222222222
+  },
+  "aggregated_data": [
+    {
+      "year": 1999,
+      "total_deaths": 1908
+    },
+    {
+      "year": 2000,
+      "total_deaths": 2400
+    },
+    {
+      "year": 2001,
+      "total_deaths": 2156
+    },
+    {
+      "year": 2002,
+      "total_deaths": 2052
+    },
+    {
+      "year": 2003,
+      "total_deaths": 1948
+    },
+    {
+      "year": 2004,
+      "total_deaths": 2212
+    },
+    {
+      "year": 2005,
+      "total_deaths": 2088
+    },
+    {
+      "year": 2006,
+      "total_deaths": 1688
+    },
+    {
+      "year": 2007,
+      "total_deaths": 1404
+    },
+    {
+      "year": 2008,
+      "total_deaths": 1688
+    },
+    {
+      "year": 2009,
+      "total_deaths": 2068
+    },
+    {
+      "year": 2010,
+      "total_deaths": 2108
+    },
+    {
+      "year": 2011,
+      "total_deaths": 2224
+    },
+    {
+      "year": 2012,
+      "total_deaths": 2408
+    },
+    {
+      "year": 2013,
+      "total_deaths": 3060
+    },
+    {
+      "year": 2014,
+      "total_deaths": 3336
+    },
+    {
+      "year": 2015,
+      "total_deaths": 3188
+    },
+    {
+      "year": 2016,
+      "total_deaths": 3432
+    }
+  ],
+  "model": {
+    "coefficient": 0.03155858392082875,
+    "rate_ratio": 1.032061836053517,
+    "p_value": 2.631412671888181e-239,
+    "converged": true
+  }
+}

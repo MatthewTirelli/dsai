@@ -31,8 +31,10 @@ url = f"{OLLAMA_HOST}/api/generate"
 
 # Build the request body as a dictionary
 # This tells Ollama which model to use and what prompt to send
+# Use a model you have pulled: ollama pull smollm2:1.7b  or  ollama pull llama3.2:3b
+# Run "ollama list" to see installed models.
 body = {
-    "model": "smollm2:1.7b",  # Model name
+    "model": "smollm2:1.7b",  # Small, fast model; must be pulled first: ollama pull smollm2:1.7b
     "prompt": "Is model working?",  # User prompt
     "stream": False  # Non-streaming response
 }
@@ -41,20 +43,33 @@ body = {
 
 # Build and send the POST request to the Ollama REST API
 # The requests library makes it easy to send HTTP requests
-response = requests.post(url, json=body)
+# Timeout so we don't hang if Ollama isn't running
+try:
+    response = requests.post(url, json=body, timeout=120)
+except requests.exceptions.ConnectionError:
+    print("Connection failed. Is Ollama running? Start it with: ollama serve")
+    exit(1)
+except requests.exceptions.Timeout:
+    print("Request timed out. Ollama may be loading the model.")
+    exit(1)
 
 # 2. PARSE RESPONSE ################################
 
-# Parse the response JSON
-# The response from Ollama is in JSON format
+# Ollama returns 200 even for some errors; check JSON for "error" key
 response_data = response.json()
 
-# Extract the model's reply as a string
-# The response structure contains the generated text
-output = response_data["response"]
+# Check for API error (e.g. model not found)
+if "error" in response_data:
+    print("Ollama error:", response_data["error"])
+    print("Tip: Pull the model first, e.g.  ollama pull smollm2:1.7b")
+    exit(1)
 
-# Print the model's reply
-print(output)
+# Extract the model's reply (key is "response" for /api/generate)
+output = response_data.get("response", "")
+if output:
+    print(output)
+else:
+    print("No 'response' in reply. Keys:", list(response_data.keys()))
 
 # Closing message
 print("\n✅ LLM query complete. Exiting Python...\n")
