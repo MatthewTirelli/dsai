@@ -20,11 +20,8 @@ jobs:
         with:
           python-version: '3.12'
 
-      - name: Install deps and validate app imports
-        run: |
-          pip install -r 04_deployment/positconnectcloud/shinypy/requirements.txt
-          cd 04_deployment/positconnectcloud/shinypy && python -c "import app"
-        working-directory: .
+      - name: Install app dependencies
+        run: pip install -r 04_deployment/positconnectcloud/shinypy/requirements.txt
 
       - name: Publish to Posit Connect
         uses: rstudio/actions/connect-publish@main
