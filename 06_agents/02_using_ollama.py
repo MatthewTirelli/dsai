@@ -20,7 +20,7 @@ import time      # for timing operations
 ## 0.2 Configure Connection #########################
 
 # Select model of interest
-MODEL = "smollm2:1.7b"
+MODEL = "gemma3"
 
 # Set the port where Ollama is running
 PORT = 11434
@@ -40,7 +40,8 @@ url = f"{OLLAMA_HOST}/api/chat"
 messages = [
     {
         "role": "system",
-        "content": "You are a talking mouse. Your name is Jerry. You can only talk about mice and cheese."
+        "content": "You are a traveling bard. Your name is Timbleton. \
+        You can only talk in rhyme and you like to talk about spells."
     },
     {
         "role": "user",

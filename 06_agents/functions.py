@@ -9,6 +9,7 @@
 
 ## 0.1 Load Packages #################################
 
+import os
 import requests  # for HTTP requests
 import json      # for working with JSON
 import pandas as pd  # for data manipulation
@@ -20,7 +21,7 @@ from datetime import datetime  # for date parsing
 ## 0.2 Configuration #################################
 
 # Default model and Ollama connection
-DEFAULT_MODEL = "smollm2:1.7b"
+DEFAULT_MODEL = "gemma3"
 PORT = 11434
 OLLAMA_HOST = f"http://localhost:{PORT}"
 CHAT_URL = f"{OLLAMA_HOST}/api/chat"
@@ -214,5 +215,47 @@ def get_shortages(category="Psychiatry", limit=500):
     # Parse dates (FDA API uses M/D/YYYY format)
     if not df.empty and "update_date" in df.columns:
         df["update_date"] = pd.to_datetime(df["update_date"], format="%m/%d/%Y", errors="coerce")
-    
+
+    return df
+
+
+# 4. PEDIATRIC SUICIDE DATA (CDC SOCRATA) ###################################
+
+def get_pediatric_suicide_df(limit=2000):
+    """
+    Get pediatric suicide surveillance data from CDC Socrata (same source as HW1).
+    Requires SOCRATA_APP_TOKEN in environment (e.g. from .env in project root).
+
+    Returns:
+    --------
+    pandas.DataFrame
+        Columns: year, injury_mechanism, total_deaths (age < 15, suicide intent).
+    """
+    token = os.getenv("SOCRATA_APP_TOKEN")
+    if not token:
+        raise ValueError(
+            "SOCRATA_APP_TOKEN not set. Add it to .env in the project root."
+        )
+    url = "https://data.cdc.gov/resource/nt65-c7a7.json"
+    params = {
+        "$select": "year, injury_mechanism, sum(deaths) as total_deaths",
+        "$where": "injury_intent = 'Suicide' AND age_years = '< 15'",
+        "$group": "year, injury_mechanism",
+        "$order": "year ASC, total_deaths DESC",
+        "$limit": limit,
+    }
+    headers = {"X-App-Token": token}
+    response = requests.get(url, headers=headers, params=params, timeout=30)
+    response.raise_for_status()
+    data = response.json()
+    if not data:
+        return pd.DataFrame(columns=["year", "injury_mechanism", "total_deaths"])
+    df = pd.DataFrame(data)
+    for col in ["year", "total_deaths"]:
+        df[col] = pd.to_numeric(df[col], errors="coerce")
+    df = df.dropna(subset=["year", "total_deaths"])
+    df["year"] = df["year"].astype(int)
+    df["total_deaths"] = df["total_deaths"].astype(int)
+    if "injury_mechanism" in df.columns:
+        df["injury_mechanism"] = df["injury_mechanism"].astype(str).str.strip()
     return df

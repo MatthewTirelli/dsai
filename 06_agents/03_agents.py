@@ -20,7 +20,7 @@ from pathlib import Path
 
 # Set working directory to this script's folder.
 # This makes relative imports and file paths consistent.
-os.chdir("C:/Users/tmf77/courses/SYSEN5381/dsai/06_agents")
+os.chdir(Path(__file__).resolve().parent)
 
 ## 0.2 Load Functions #################################
 
@@ -30,7 +30,7 @@ from functions import agent_run, get_shortages, df_as_text
 # 1. CONFIGURATION ###################################
 
 # Select model of interest
-MODEL = "smollm2:135m"
+MODEL = "gemma3"
 
 # We will use the FDA Drug Shortages API to get data on drug shortages.
 # https://open.fda.gov/apis/drug/drugshortages/
@@ -81,20 +81,21 @@ task2 = df_as_text(stat)
 
 # Task 2 - Analyst Agent -------------------------
 # This agent analyzes the data and returns a markdown table
-role2 = "I analyze medicine shortage data provided by the user in a table, and return a markdown table of currently ongoing shortages."
+role2 = "I find all of the medications that have more than 4 letters and \
+return a markdown table of the results."
 result2 = agent_run(role=role2, task=task2, model=MODEL, output="text")
 
 result2
+print(result2)
 
 # Task 3 - Press Release Agent -------------------------
 # This agent takes the analysis and writes a press release
-role3 = "I write a 1-page press release on the currently ongoing shortages, 
-using the analysis provided by the user."
+role3 = "I write a story using all the medications that start with the letter 'A'."
 result3 = agent_run(role=role3, task=result2, model=MODEL, output="text")
 result3
 
 # 3. VIEW RESULTS ###################################
 
 # View press release
-print("📰 Press Release:")
+print("📰 Poem:")
 print(result3)
