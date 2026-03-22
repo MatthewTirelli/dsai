@@ -18,14 +18,14 @@ import json          # for working with JSON
 # 0.2 Working Directory #################################
 
 # Get the directory of the current script
-script_dir = os.path.dirname(os.path.abspath(__name__))
+script_dir = os.path.dirname(os.path.abspath(__file__))
 os.chdir(script_dir)
 
 ## 0.3 Start Ollama Server (source 01_ollama.py) #################################
 
 # Execute 01_ollama.py as if we were sourcing it in R.
 # This will configure environment variables and start `ollama serve` in the background.
-ollama_script_path = os.path.join(os.getcwd(), "01_ollama.py")
+ollama_script_path = os.path.join(script_dir, "01_ollama.py")
 _ = runpy.run_path(ollama_script_path)
 
 
@@ -37,7 +37,7 @@ from functions import agent_run
 ## 0.3 Configuration #################################
 
 # Select model of interest
-MODEL = "smollm2:1.7b"  # use this small model
+MODEL = "gemma3"  # use this small model
 PORT = 11434  # use this default port
 OLLAMA_HOST = f"http://localhost:{PORT}"  # use this default host
 DOCUMENT = "data/pokemon.csv"  # path to the document to search

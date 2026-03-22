@@ -43,14 +43,14 @@ from sqlite_vec import load as sqlite_vec_load, serialize_float32
 # 0.2 Working Directory #################################
 
 # Get the directory of the current script
-script_dir = os.path.dirname(os.path.abspath(__name__))
+script_dir = os.path.dirname(os.path.abspath(__file__))
 os.chdir(script_dir)
 
 ## 0.3 Start Ollama Server (source 01_ollama.py) #################################
 
 # Execute 01_ollama.py as if we were sourcing it in R.
 # This will configure environment variables and start `ollama serve` in the background.
-ollama_script_path = os.path.join(os.getcwd(), "01_ollama.py")
+ollama_script_path = os.path.join(script_dir, "01_ollama.py")
 _ = runpy.run_path(ollama_script_path)
 
 
