@@ -9,9 +9,11 @@
 
 ## 0.1 Load Packages #################################
 
-import requests  # for HTTP requests
-import json      # for working with JSON
+import inspect
+import json  # for working with JSON
+
 import pandas as pd  # for data manipulation
+import requests  # for HTTP requests
 
 # If you haven't already, install these packages...
 # pip install requests pandas
@@ -79,18 +81,25 @@ def agent(messages, model=DEFAULT_MODEL, output="text", tools=None, all=False):
         # For any given tool call, execute the tool call
         if "tool_calls" in result.get("message", {}):
             tool_calls = result["message"]["tool_calls"]
+            # Tool functions are defined in the *caller* script, not in this module
+            frame = inspect.currentframe()
+            try:
+                caller_globals = (
+                    frame.f_back.f_globals if frame and frame.f_back else globals()
+                )
+            finally:
+                del frame
             for tool_call in tool_calls:
                 # Execute the tool function
-                # Note: Tool functions must be defined in the global scope
                 func_name = tool_call["function"]["name"]
-                raw_args = tool_call["function"]["arguments"]
+                raw_args = tool_call["function"].get("arguments", {})
                 func_args = json.loads(raw_args) if isinstance(raw_args, str) else raw_args
-                
-                # Get the function from globals and execute it
-                func = globals().get(func_name)
+
+                func = caller_globals.get(func_name) or globals().get(func_name)
                 if func:
-                    output = func(**func_args)
-                    tool_call["output"] = output
+                    # Use tool_result — do not reuse name "output" (shadows agent(..., output=) mode string)
+                    tool_result = func(**func_args)
+                    tool_call["output"] = tool_result
         
         if all:
             return result

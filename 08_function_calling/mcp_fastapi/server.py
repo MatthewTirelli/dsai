@@ -42,7 +42,26 @@ TOOLS = [
             },
             "required": ["dataset_name"],
         },
-    }
+    },
+    {
+        "name": "filter_mtcars_by_model",
+        "description": (
+            "Return rows from the mtcars dataset whose car model name (rownames column) "
+            "contains a given substring. Matching is case-insensitive."
+        ),
+        "inputSchema": {
+            "type": "object",
+            "properties": {
+                "contains": {
+                    "type": "string",
+                    "description": (
+                        "Substring to search for in the model name, e.g. 'toyota' or 'Merc'."
+                    ),
+                }
+            },
+            "required": ["contains"],
+        },
+    },
 ]
 
 # ── Tool logic (same datasets as R: mtcars, iris via Rdatasets CSV) ──
@@ -65,6 +84,18 @@ def run_tool(name: str, args: dict) -> str:
         summary.index.name = "variable"
         summary.columns = ["mean", "sd", "min", "max"]
         return summary.reset_index().to_json(orient="records", indent=2)
+
+    if name == "filter_mtcars_by_model":
+        needle = str(args.get("contains", "")).strip()
+        if not needle:
+            raise ValueError("contains must be a non-empty substring")
+        df = DATASETS["mtcars"].copy()
+        if "rownames" not in df.columns:
+            raise ValueError("mtcars table is missing 'rownames' column")
+        col = df["rownames"].astype(str)
+        mask = col.str.contains(needle, case=False, regex=False, na=False)
+        filtered = df.loc[mask]
+        return filtered.to_json(orient="records", indent=2)
 
     raise ValueError(f"Unknown tool: {name}")
 
