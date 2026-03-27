@@ -21,7 +21,7 @@ import json      # for working with JSON
 ## 0.2 Configuration #################################
 
 # Select model of interest
-# Note: Function calling requires a model that supports tools (e.g., smollm2:1.7b)
+# Function calling requires a model that supports tools (e.g. smollm2:1.7b). gemma3 returns HTTP 400.
 MODEL = "smollm2:1.7b"
 
 # Set the port where Ollama is running
@@ -33,9 +33,9 @@ CHAT_URL = f"{OLLAMA_HOST}/api/chat"
 
 # Define a function to be used as a tool
 # This function must be defined in the global scope so it can be called
-def add_two_numbers(x, y):
+def multiply_numbers(x, y):
     """
-    Add two numbers together.
+    Multiply two numbers together.
     
     Parameters:
     -----------
@@ -47,19 +47,19 @@ def add_two_numbers(x, y):
     Returns:
     --------
     float
-        Sum of x and y
+        Product of x and y
     """
-    return x + y
+    return x * y
 
 # 2. DEFINE TOOL METADATA ###################################
 
 # Define the tool metadata as a dictionary
 # This tells the LLM what the function does and what parameters it needs
-tool_add_two_numbers = {
+tool_multiply_numbers = {
     "type": "function",
     "function": {
-        "name": "add_two_numbers",
-        "description": "Add two numbers",
+        "name": "multiply_numbers",
+        "description": "Multiply two numbers",
         "parameters": {
             "type": "object",
             "required": ["x", "y"],
@@ -81,19 +81,21 @@ tool_add_two_numbers = {
 
 # Create a simple chat history with a user question that will require the tool
 messages = [
-    {"role": "user", "content": "What is 3 + 2?"}
+    {"role": "user", "content": "What is 3 * 2?"}
 ]
 
 # Build the request body with tools
 body = {
     "model": MODEL,
     "messages": messages,
-    "tools": [tool_add_two_numbers],
+    "tools": [tool_multiply_numbers],
     "stream": False
 }
 
 # Send the request
 response = requests.post(CHAT_URL, json=body)
+if not response.ok:
+    print(response.text)
 response.raise_for_status()
 result = response.json()
 
@@ -107,13 +109,14 @@ if "tool_calls" in result.get("message", {}):
     # Execute each tool call
     for tool_call in tool_calls:
         func_name = tool_call["function"]["name"]
-        func_args = json.loads(tool_call["function"]["arguments"])
+        raw_args = tool_call["function"]["arguments"]
+        func_args = json.loads(raw_args) if isinstance(raw_args, str) else raw_args
         
         # Get the function from globals and execute it
         func = globals().get(func_name)
         if func:
             output = func(**func_args)
-            print(f"Tool call result: {output}")
+            print(f"Tool call result for HW (2*3): {output}")
             tool_call["output"] = output
 else:
     print("No tool calls in response")
