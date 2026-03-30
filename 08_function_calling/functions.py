@@ -11,6 +11,7 @@
 
 import inspect
 import json  # for working with JSON
+from pathlib import Path
 
 import pandas as pd  # for data manipulation
 import requests  # for HTTP requests
@@ -25,6 +26,55 @@ DEFAULT_MODEL = "smollm2:1.7b"
 PORT = 11434
 OLLAMA_HOST = f"http://localhost:{PORT}"
 CHAT_URL = f"{OLLAMA_HOST}/api/chat"
+
+_FUNCTIONS_FILE = Path(__file__).resolve()
+
+
+def _globals_for_tool_dispatch():
+    """
+    Tool callables live in the script that invoked agent() or agent_run().
+    f_back from agent() alone is correct when students call agent() directly (e.g. 03 script).
+    When they use agent_run(), an extra frame in this module would break lookup unless we
+    walk the stack until we leave functions.py.
+    """
+    frame = inspect.currentframe().f_back
+    while frame is not None:
+        gpath = frame.f_globals.get("__file__")
+        if gpath:
+            try:
+                if Path(gpath).resolve() != _FUNCTIONS_FILE:
+                    return frame.f_globals
+            except OSError:
+                pass
+        frame = frame.f_back
+    return globals()
+
+
+def _parse_tool_arguments(raw_args):
+    if raw_args is None:
+        return {}
+    if isinstance(raw_args, dict):
+        return raw_args
+    if isinstance(raw_args, str):
+        s = raw_args.strip() or "{}"
+        try:
+            return json.loads(s)
+        except json.JSONDecodeError:
+            return {}
+    return {}
+
+
+def _resolve_tool_function(caller_globals, func_name):
+    if not func_name:
+        return None
+    fn = caller_globals.get(func_name) or globals().get(func_name)
+    if fn is not None:
+        return fn
+    for key, val in caller_globals.items():
+        if callable(val) and key.lower() == func_name.strip().lower():
+            return val
+    return None
+
 
 # 1. AGENT FUNCTION ###################################
 
@@ -78,40 +128,38 @@ def agent(messages, model=DEFAULT_MODEL, output="text", tools=None, all=False):
         response.raise_for_status()
         result = response.json()
         
-        # For any given tool call, execute the tool call
-        if "tool_calls" in result.get("message", {}):
-            tool_calls = result["message"]["tool_calls"]
-            # Tool functions are defined in the *caller* script, not in this module
-            frame = inspect.currentframe()
-            try:
-                caller_globals = (
-                    frame.f_back.f_globals if frame and frame.f_back else globals()
-                )
-            finally:
-                del frame
-            for tool_call in tool_calls:
-                # Execute the tool function
-                func_name = tool_call["function"]["name"]
-                raw_args = tool_call["function"].get("arguments", {})
-                func_args = json.loads(raw_args) if isinstance(raw_args, str) else raw_args
+        msg = result.get("message") or {}
+        tool_calls = msg.get("tool_calls") or []
 
-                func = caller_globals.get(func_name) or globals().get(func_name)
-                if func:
-                    # Use tool_result — do not reuse name "output" (shadows agent(..., output=) mode string)
-                    tool_result = func(**func_args)
-                    tool_call["output"] = tool_result
-        
+        if tool_calls:
+            caller_globals = _globals_for_tool_dispatch()
+            for tool_call in tool_calls:
+                fn_block = tool_call.get("function") or {}
+                func_name = fn_block.get("name") or tool_call.get("name")
+                raw_args = fn_block.get("arguments", {})
+                func_args = _parse_tool_arguments(raw_args)
+
+                func = _resolve_tool_function(caller_globals, func_name)
+                if func is None:
+                    raise RuntimeError(
+                        f"Model requested unknown tool {func_name!r}. "
+                        "Define a same-named function in the script that calls agent() or agent_run()."
+                    )
+                tool_result = func(**func_args)
+                tool_call["output"] = tool_result
+
         if all:
             return result
-        else:
-            # When output="tools", return the tool_calls list with outputs
-            # When output="text", return the last tool call output or message content
-            if "tool_calls" in result.get("message", {}):
-                if output == "tools":
-                    return tool_calls
-                else:
-                    return tool_calls[-1].get("output", result["message"]["content"])
-            return result["message"]["content"]
+
+        if tool_calls:
+            if output == "tools":
+                return tool_calls
+            last_out = tool_calls[-1].get("output")
+            if last_out is not None:
+                return last_out
+            return msg.get("content") or ""
+
+        return result["message"]["content"]
 
 
 def agent_run(role, task, tools=None, output="text", model=DEFAULT_MODEL):
