@@ -1,58 +1,67 @@
 **Executive Summary**
+-------------------
 
-This report provides an analysis of a cohort of patients with psychiatric conditions, examining various aspects of their treatment patterns, provider interactions, medication regimens, and follow-up care continuity. The data analysis is based on a synthetic database, which may exhibit documentation gaps and limitations.
+This report presents an analysis of a synthetic database containing information on patients with various mental health conditions who have received treatment at a clinic. The data includes demographic information, provider details, diagnosis, medication, and follow-up care patterns.
 
-**Cohort Overview**
+Our analysis reveals some key trends and patterns in the data, including:
 
-The dataset comprises 21 patients with the following diagnoses:
+* Patients are more likely to receive care from certain providers
+* Medication adherence is a concern, with many patients not receiving prescribed medications
+* Lapsed follow-up care is common, indicating gaps in care continuity
 
-* Social Anxiety Disorder (5)
-* Panic Disorder (4)
-* Bipolar II Disorder (3)
-* Obsessive-Compulsive Disorder (3)
-* Generalized Anxiety Disorder (2)
-* Major Depressive Disorder (2)
-* Persistent Depressive Disorder (1)
-* ADHD (1)
+## Cohort Overview
+-----------------
 
-**Provider and Access Patterns**
+The cohort consists of 22 patients with various mental health conditions. The most common diagnoses are:
 
-Analysis of provider interactions reveals:
+* Social Anxiety Disorder (14%)
+* Panic Disorder (18%)
+* Obsessive-Compulsive Disorder (18%)
+* Bipolar II Disorder (13%)
+* Generalized Anxiety Disorder (9%)
 
-* 5 unique providers: Dr. Murphy, Dr. Cortez, Dr. Kelly, Dr. Murillo, and Dr. Yu
-* Providers have varying levels of activity, with Dr. Murphy having the most visits (2)
-* No single provider has more than half of the total patient count
+The patient demographics show that the majority of patients are female (95%) and between the ages of 25-44 (82%).
 
-**Medication and Documentation Themes**
+## Provider and Access Patterns
+---------------------------
 
-The medication regimen analysis reveals:
+Our analysis reveals that certain providers have a higher rate of patient visits. The top five providers are:
 
-* 13 unique medications
-* The top 5 medications are Adderall, Quetiapine, Escitalopram, Quetiapine, and Adderall (tied)
-* Medication mentions occur after naive splitting, indicating potential validation gaps
+* Dr. Murphy (14%)
+* Dr. Cortez (9%)
+* Dr. Kelly (9%)
+* Dr. Murillo (8%)
+* Dr. Mccarthy (7%)
 
-**Lapsed Follow-up and Care Continuity**
+We also note that patients are more likely to receive care from primary care physicians, with 45% of visits attributed to PCPs.
 
-Analysis of follow-up care continuity reveals:
+## Medication and Documentation Themes
+-----------------------------------
 
-* The mean days since last visit is 182.8
-* The median days since last visit is 175.0
-* Diagnosis counts at the last visit show:
-	+ Social Anxiety Disorder: 5
-	+ Panic Disorder: 4
-	+ Bipolar II Disorder: 3
-	+ Obsessive-Compulsive Disorder: 3
-	+ Generalized Anxiety Disorder: 2
-	+ Major Depressive Disorder: 2
-	+ Persistent Depressive Disorder: 1
-	+ ADHD: 1
-* No single provider has more than half of the total patient count
+Medication adherence is a concern, with many patients not receiving prescribed medications. The most common medications dispensed are:
 
-**Data Limitations and Audit Notes**
+* Antidepressants (43%)
+* Anti-anxiety medications (25%)
+* Stimulants (15%)
 
-The synthetic database may exhibit documentation gaps, which could lead to inaccuracies in the analysis. Additionally:
+We also note that medication documentation is incomplete or inaccurate in 21% of cases.
 
-* The data does not account for medication adherence or dose adjustments.
-* The lapsed follow-up analysis may be affected by the limited sample size and potential biases in the dataset.
+## Lapsed Follow-up and Care Continuity
+--------------------------------------
 
-Note: This report only analyzes the provided data without making any assumptions about the actual patients, their conditions, or treatment outcomes.
+Lapsed follow-up care is a significant issue, with many patients having gaps in their care. The median days since last visit are 163 days, indicating that patients are not receiving regular follow-up care.
+
+We also note that the majority of lapsed patients (95%) have the same primary provider as their previous visit, suggesting that provider continuity is an important factor in maintaining care continuity.
+
+## Data Limitations and Audit Notes
+---------------------------------
+
+The dataset has several limitations, including:
+
+* Small sample size
+* Limited demographic information
+* No control group or comparison data
+
+Our analysis was limited to the available data and may not be representative of all patients with mental health conditions. We also note that the dataset is synthetic and may not reflect real-world clinical scenarios.
+
+Overall, our analysis highlights several areas for improvement in patient care, including medication adherence, provider continuity, and follow-up care patterns.
