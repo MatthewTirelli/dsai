@@ -19,6 +19,15 @@ import pandas as pd
 from scipy.stats import bartlett
 import pingouin as pg
 
+
+def _pingouin_col(df, *names):
+    """Pingouin renamed hyphenated column names to underscores in newer versions."""
+    for n in names:
+        if n in df.columns:
+            return df[n].values[0]
+    raise KeyError(f"Expected one of {names}; columns={list(df.columns)}")
+
+
 ## 0.2 Load Quality Control Scores #################################
 
 # Load pre-computed quality control scores for reports from 3 different prompts
@@ -108,8 +117,8 @@ print("📋 T-Test Results:")
 print(t_test_result)
 print()
 
-# Extract p-value
-p_value = t_test_result['p-val'].values[0]
+# Extract p-value (column name is p_val in recent pingouin, p-val in older)
+p_value = _pingouin_col(t_test_result, "p-val", "p_val")
 
 # Interpret the result
 print("💡 Interpretation:")
@@ -143,9 +152,9 @@ print("\n📋 ANOVA Results:")
 print(anova_result)
 print()
 
-# Extract F-statistic and p-value
-f_statistic = anova_result['F'].values[0]
-p_value = anova_result['p-unc'].values[0]
+# Extract F-statistic and p-value (p-unc vs p_unc across pingouin versions)
+f_statistic = anova_result["F"].values[0]
+p_value = _pingouin_col(anova_result, "p-unc", "p_unc")
 
 print(f"📊 F-statistic: {f_statistic:.4f}")
 print(f"📊 p-value: {p_value:.4f}\n")
@@ -198,3 +207,7 @@ print()
 print("✅ Statistical comparison complete!")
 print("💡 Key takeaway: Use these statistical tests to determine if prompt differences")
 print("   are statistically significant, not just due to random variation.")
+print(
+    "\n💡 For original vs revised QC rubric (qc_prompt_ab_scores.csv), run:\n"
+    "   python3 09_text_analysis/04_qc_rubric_comparison.py\n"
+)
