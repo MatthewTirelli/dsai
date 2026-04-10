@@ -37,7 +37,7 @@ def add_two_numbers(x, y):
     return x + y
 
 # Define another function to be used as a tool
-def get_table(df):
+def get_table(df=None):
     """
     Convert a pandas DataFrame into a markdown table.
 
@@ -111,7 +111,7 @@ tool_get_table = {
         "description": "Convert a data.frame into a markdown table",
         "parameters": {
             "type": "object",
-            "required": ["df"],
+            "required": [],
             "properties": {
                 "df": {
                     "type": "object",
@@ -131,7 +131,7 @@ messages = [
 ]
 
 resp = agent(messages=messages, model=MODEL, output="text")
-print("📝 Standard Chat Response:")
+print("Standard Chat Response:")
 print(resp)
 print()
 
@@ -143,7 +143,7 @@ messages = [
 ]
 
 resp = agent(messages=messages, model=MODEL, output="tools", tools=[tool_add_two_numbers])
-print("🔧 Tool Call #1 Result:")
+print("Tool Call #1 Result:")
 print(resp)
 print()
 
@@ -190,7 +190,7 @@ else:
 print()
 
 # Compare against manual approach
-print("📊 Manual Table Creation:")
+print("Manual Table Creation:")
 manual_table = df.to_markdown(index=False)
 print(manual_table)
 print()

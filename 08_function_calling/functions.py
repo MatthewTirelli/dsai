@@ -11,6 +11,7 @@
 
 import inspect
 import json  # for working with JSON
+import time  # for simple polling/retry
 from pathlib import Path
 
 import pandas as pd  # for data manipulation
@@ -26,6 +27,31 @@ DEFAULT_MODEL = "smollm2:1.7b"
 PORT = 11434
 OLLAMA_HOST = f"http://localhost:{PORT}"
 CHAT_URL = f"{OLLAMA_HOST}/api/chat"
+REQUEST_TIMEOUT = 300  # seconds; avoid hanging indefinitely on network/model issues
+OLLAMA_TAGS_URL = f"{OLLAMA_HOST}/api/tags"
+
+
+def ensure_ollama_available(max_wait_seconds: int = 15, poll_interval_seconds: float = 0.5) -> None:
+    """
+    Fail fast with a helpful message if Ollama isn't reachable.
+    """
+    deadline = time.time() + max_wait_seconds
+    last_err = None
+    while time.time() < deadline:
+        try:
+            r = requests.get(OLLAMA_TAGS_URL, timeout=5)
+            if r.ok:
+                return
+        except Exception as e:
+            last_err = e
+        time.sleep(poll_interval_seconds)
+
+    raise RuntimeError(
+        "Ollama is not reachable at localhost:11434. "
+        "Start it first with: `python 08_function_calling/01_ollama.py`.\n"
+        f"Last error: {last_err}"
+    )
+
 
 _FUNCTIONS_FILE = Path(__file__).resolve()
 
@@ -81,7 +107,7 @@ def _resolve_tool_function(caller_globals, func_name):
 def agent(messages, model=DEFAULT_MODEL, output="text", tools=None, all=False):
     """
     Agent wrapper function that runs a single agent, with or without tools.
-    
+
     Parameters:
     -----------
     messages : list
@@ -95,39 +121,44 @@ def agent(messages, model=DEFAULT_MODEL, output="text", tools=None, all=False):
         List of tool metadata dictionaries for function calling
     all : bool
         If True, return all responses. If False, return only the last response.
-    
+
     Returns:
     --------
     str or list
         The agent's response(s)
     """
-    
+
     # If the agent has NO tools, perform a standard chat
     if tools is None:
+        ensure_ollama_available()
         body = {
             "model": model,
             "messages": messages,
-            "stream": False
+            "stream": False,
+            # Token cap makes runtime more predictable for students' machines.
+            "options": {"num_predict": 500},
         }
-        
-        response = requests.post(CHAT_URL, json=body)
+
+        response = requests.post(CHAT_URL, json=body, timeout=REQUEST_TIMEOUT)
         response.raise_for_status()
         result = response.json()
-        
+
         return result["message"]["content"]
     else:
         # If the agent has tools, perform a tool call
+        ensure_ollama_available()
         body = {
             "model": model,
             "messages": messages,
             "tools": tools,
-            "stream": False
+            "stream": False,
+            "options": {"num_predict": 500},
         }
-        
-        response = requests.post(CHAT_URL, json=body)
+
+        response = requests.post(CHAT_URL, json=body, timeout=REQUEST_TIMEOUT)
         response.raise_for_status()
         result = response.json()
-        
+
         msg = result.get("message") or {}
         tool_calls = msg.get("tool_calls") or []
 
@@ -159,13 +190,13 @@ def agent(messages, model=DEFAULT_MODEL, output="text", tools=None, all=False):
                 return last_out
             return msg.get("content") or ""
 
-        return result["message"]["content"]
+        return msg.get("content") or ""
 
 
 def agent_run(role, task, tools=None, output="text", model=DEFAULT_MODEL):
     """
     Run an agent with a specific role and task.
-    
+
     Parameters:
     -----------
     role : str
@@ -178,19 +209,19 @@ def agent_run(role, task, tools=None, output="text", model=DEFAULT_MODEL):
         Output format (default: "text")
     model : str
         Model to use (default: DEFAULT_MODEL)
-    
+
     Returns:
     --------
     str
         The agent's response
     """
-    
+
     # Define the messages to be sent to the agent
     messages = [
         {"role": "system", "content": role},
-        {"role": "user", "content": task}
+        {"role": "user", "content": task},
     ]
-    
+
     # Run the agent
     resp = agent(messages=messages, model=model, output=output, tools=tools)
     return resp
@@ -201,18 +232,18 @@ def agent_run(role, task, tools=None, output="text", model=DEFAULT_MODEL):
 def df_as_text(df):
     """
     Convert a pandas DataFrame to a markdown table string.
-    
+
     Parameters:
     -----------
     df : pandas.DataFrame
         The DataFrame to convert to text
-    
+
     Returns:
     --------
     str
         A markdown-formatted table string
     """
-    
+
     # Convert DataFrame to markdown table
     # pandas to_markdown() method creates markdown tables
     tab = df.to_markdown(index=False)
