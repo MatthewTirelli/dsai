@@ -30,8 +30,10 @@ if (file.exists(env_path)) {
   readRenviron(env_path)
 }
 
+source(file.path(FIXER_ROOT, "functions.R"), local = FALSE)
+
 OLLAMA_HOST = trimws(Sys.getenv("OLLAMA_HOST", unset = "https://ollama.com"))
-OLLAMA_API_KEY = trimws(Sys.getenv("OLLAMA_API_KEY", unset = ""))
+OLLAMA_API_KEY = normalize_ollama_api_key(trimws(Sys.getenv("OLLAMA_API_KEY", unset = "")))
 OLLAMA_MODEL = trimws(Sys.getenv("OLLAMA_MODEL", unset = ""))
 if (!nzchar(OLLAMA_MODEL)) {
   OLLAMA_MODEL = "gpt-oss:120b"
@@ -40,8 +42,6 @@ if (!nzchar(OLLAMA_MODEL)) {
 if (!nzchar(OLLAMA_API_KEY)) {
   stop("Set OLLAMA_API_KEY in fixer/.env (copy from .env.example).")
 }
-
-source(file.path(FIXER_ROOT, "functions.R"), local = FALSE)
 
 # 1. MINIMAL CHAT (test query) ###################################
 

@@ -8,7 +8,6 @@ import os
 import sys
 
 import httpx
-from dotenv import load_dotenv
 
 from pathlib import Path
 
@@ -29,21 +28,29 @@ def resolve_fixer_root() -> Path:
     raise SystemExit("Run from fixer/, dsai repo root, or set FIXER_ROOT.")
 
 
-from functions import ollama_chat_once
+from functions import load_fixer_dotenv, normalize_ollama_api_key, ollama_chat_once
 
 FIXER_ROOT = resolve_fixer_root()
-env_path = FIXER_ROOT / ".env"
-if env_path.is_file():
-    load_dotenv(env_path)
+repo_env = FIXER_ROOT.parent.parent / ".env"
+fixer_env = FIXER_ROOT / ".env"
+if not fixer_env.is_file() and not repo_env.is_file():
+    raise SystemExit(
+        "No .env found. Put OLLAMA_API_KEY in 10_data_management/fixer/.env or in the repo root .env "
+        "(next to this course repo). Copy fixer/.env.example to fixer/.env if needed."
+    )
+load_fixer_dotenv(FIXER_ROOT)
 
 OLLAMA_HOST = os.environ.get("OLLAMA_HOST", "https://ollama.com").strip()
-OLLAMA_API_KEY = os.environ.get("OLLAMA_API_KEY", "").strip()
+OLLAMA_API_KEY = normalize_ollama_api_key(os.environ.get("OLLAMA_API_KEY", ""))
 OLLAMA_MODEL = os.environ.get("OLLAMA_MODEL", "").strip()
 if not OLLAMA_MODEL:
     OLLAMA_MODEL = "gpt-oss:120b"
 
 if not OLLAMA_API_KEY:
-    raise SystemExit("Set OLLAMA_API_KEY in fixer/.env (copy from .env.example).")
+    raise SystemExit(
+        "OLLAMA_API_KEY is empty after loading .env. Set it in repo root .env or fixer/.env "
+        "(variable name must be OLLAMA_API_KEY)."
+    )
 
 messages = [
     {"role": "user", "content": "Reply with exactly one word: pong"},

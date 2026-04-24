@@ -37,6 +37,15 @@ split_df_into_row_chunks = function(df, n_rows) {
 
 # -- Ollama HTTP -------------------------------------------------------------------
 
+# Strip whitespace and a duplicated "Bearer " prefix (the client adds Bearer).
+normalize_ollama_api_key = function(api_key) {
+  ak = trimws(as.character(api_key %||% ""))
+  if (nzchar(ak) && startsWith(tolower(ak), "bearer ")) {
+    ak = trimws(substring(ak, 8L))
+  }
+  ak
+}
+
 # Single chat completion. Pass tools for tool-calling; pass format = "json" for JSON mode.
 ollama_chat_once = function(
   base_url,
@@ -66,7 +75,7 @@ ollama_chat_once = function(
 
   req = httr2::request(url) |>
     httr2::req_headers("Content-Type" = "application/json")
-  ak = trimws(as.character(api_key %||% ""))
+  ak = normalize_ollama_api_key(api_key)
   if (nzchar(ak)) {
     req = req |> httr2::req_headers(Authorization = paste("Bearer", ak))
   }
@@ -75,6 +84,28 @@ ollama_chat_once = function(
     httr2::req_timeout(120)
 
   resp = httr2::req_perform(req)
+  sc = httr2::resp_status(resp)
+  if (sc >= 400L) {
+    txt = tryCatch(httr2::resp_body_string(resp), error = function(e) "")
+    msg = paste0("HTTP ", sc, " for ", url)
+    if (sc == 401L) {
+      msg = paste0(
+        msg,
+        ". Unauthorized — set OLLAMA_API_KEY in fixer/.env to a valid Ollama Cloud API key ",
+        "(https://ollama.com/settings/keys). Use the raw token only; do not prefix with 'Bearer '."
+      )
+    } else if (sc == 403L) {
+      msg = paste0(msg, ". Forbidden — the key may not have access to Ollama Cloud or this model.")
+    }
+    if (nzchar(txt)) {
+      txt = gsub("\n", " ", txt, fixed = TRUE)
+      if (nchar(txt) > 600L) {
+        txt = paste0(substr(txt, 1L, 600L), "...")
+      }
+      msg = paste0(msg, " Response: ", txt)
+    }
+    stop(msg, call. = FALSE)
+  }
   data = httr2::resp_body_json(resp, simplifyVector = FALSE, simplifyDataFrame = FALSE)
   msg = data$message %||% list()
   content = msg$content

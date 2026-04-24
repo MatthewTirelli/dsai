@@ -13,9 +13,9 @@ from pathlib import Path
 from typing import Any
 
 import pandas as pd
-from dotenv import load_dotenv
-
 from functions import (
+    load_fixer_dotenv,
+    normalize_ollama_api_key,
     ollama_chat_once,
     parse_function_arguments,
     split_df_into_row_chunks,
@@ -43,19 +43,29 @@ print(f"   📄 Raw data:     {RAW_PATH}")
 print(f"   💾 Working copy: {WORK_PATH}")
 print(f"   📝 Audit log:    {LOG_PATH}\n")
 
-env_path = FIXER_ROOT / ".env"
+repo_env = FIXER_ROOT.parent.parent / ".env"
+fixer_env = FIXER_ROOT / ".env"
 print("🔐 Loading .env ...")
-if env_path.is_file():
-    load_dotenv(env_path)
-else:
+if not fixer_env.is_file() and not repo_env.is_file():
     raise SystemExit(
-        "No .env in fixer folder; create one with OLLAMA_API_KEY, OLLAMA_HOST, OLLAMA_MODEL."
+        "No .env found. Use 10_data_management/fixer/.env or repo root .env (see fixer/.env.example)."
     )
-print("   ✅ .env read from fixer folder.\n")
+load_fixer_dotenv(FIXER_ROOT)
+_src = []
+if repo_env.is_file():
+    _src.append("repo root")
+if fixer_env.is_file():
+    _src.append("fixer/")
+print(f"   ✅ .env loaded ({', '.join(_src)}).\n")
 
 OLLAMA_HOST = os.environ.get("OLLAMA_HOST", "https://ollama.com").strip()
-OLLAMA_API_KEY = os.environ.get("OLLAMA_API_KEY", "").strip()
+OLLAMA_API_KEY = normalize_ollama_api_key(os.environ.get("OLLAMA_API_KEY", ""))
 OLLAMA_MODEL = os.environ.get("OLLAMA_MODEL", "nemotron-3-nano:30b-cloud").strip()
+if not OLLAMA_API_KEY:
+    raise SystemExit(
+        "OLLAMA_API_KEY is missing or empty after loading .env. Set it in repo root .env or fixer/.env "
+        "(https://ollama.com/settings/keys — raw token only; no 'Bearer ' prefix)."
+    )
 print(f"☁️  Ollama: host = {OLLAMA_HOST}")
 print(f"   model  = {OLLAMA_MODEL}")
 if OLLAMA_API_KEY:

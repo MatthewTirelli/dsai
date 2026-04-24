@@ -12,6 +12,21 @@ from typing import Any
 
 import httpx
 import pandas as pd
+from dotenv import load_dotenv
+
+
+def load_fixer_dotenv(fixer_root: Path) -> None:
+    """
+    Load env files: repo root ``dsai/.env`` first, then ``fixer/.env`` (later overrides).
+    Use this so OLLAMA_* can live in either place.
+    """
+    fixer_root = fixer_root.resolve()
+    root_env = fixer_root.parent.parent / ".env"
+    local_env = fixer_root / ".env"
+    if root_env.is_file():
+        load_dotenv(root_env, override=False)
+    if local_env.is_file():
+        load_dotenv(local_env, override=True)
 
 
 def resolve_fixer_root() -> Path:
@@ -26,6 +41,17 @@ def resolve_fixer_root() -> Path:
     if (cand / "functions.py").is_file():
         return cand.resolve()
     raise RuntimeError("Run from fixer/, dsai repo root, or set FIXER_ROOT.")
+
+
+def normalize_ollama_api_key(api_key: str | None) -> str:
+    """
+    Strip whitespace and a duplicated 'Bearer ' prefix (the client adds Bearer).
+    """
+    ak = (api_key or "").strip()
+    low = ak.lower()
+    if low.startswith("bearer "):
+        ak = ak[7:].strip()
+    return ak
 
 
 def split_df_into_row_chunks(df: pd.DataFrame, n_rows: int) -> list[pd.DataFrame]:
@@ -46,6 +72,26 @@ def split_df_into_row_chunks(df: pd.DataFrame, n_rows: int) -> list[pd.DataFrame
         out.append(df.iloc[s:e].copy())
         s = e
     return out
+
+
+def _ollama_http_error_message(exc: httpx.HTTPStatusError, url: str) -> str:
+    sc = exc.response.status_code
+    snippet = (exc.response.text or "").strip().replace("\n", " ")
+    if len(snippet) > 600:
+        snippet = snippet[:600] + "..."
+    msg = f"HTTP {sc} for {url}"
+    if sc == 401:
+        msg += (
+            ". Unauthorized — set OLLAMA_API_KEY in fixer/.env to a valid Ollama Cloud API key "
+            "(https://ollama.com/settings/keys). Use the raw token only; do not prefix with 'Bearer '."
+        )
+    elif sc == 403:
+        msg += (
+            ". Forbidden — the key may not have access to Ollama Cloud or this model."
+        )
+    if snippet:
+        msg += f" Response: {snippet}"
+    return msg
 
 
 def ollama_chat_once(
@@ -72,13 +118,16 @@ def ollama_chat_once(
         body["options"] = {"num_predict": int(max_output_tokens)}
 
     headers = {"Content-Type": "application/json"}
-    ak = (api_key or "").strip()
+    ak = normalize_ollama_api_key(api_key)
     if ak:
         headers["Authorization"] = f"Bearer {ak}"
 
     with httpx.Client(timeout=120.0) as client:
         resp = client.post(url, json=body, headers=headers)
-        resp.raise_for_status()
+        try:
+            resp.raise_for_status()
+        except httpx.HTTPStatusError as e:
+            raise RuntimeError(_ollama_http_error_message(e, url)) from e
         data = resp.json()
 
     msg = data.get("message") or {}

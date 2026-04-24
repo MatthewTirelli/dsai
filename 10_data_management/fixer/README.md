@@ -20,7 +20,7 @@ Hands-on write-ups: **[`ACTIVITY_fixer_csv.md`](../ACTIVITY_fixer_csv.md)** and 
 **Both tracks**
 
 - **Ollama Cloud** API key and a **tool-capable** model for the batched scripts (same pattern as [`../agentr/`](../agentr/))
-- Copy `.env.example` to `.env` in this folder (or set env vars in your shell) with `OLLAMA_API_KEY`, `OLLAMA_HOST`, `OLLAMA_MODEL`
+- Copy `fixer/.env.example` to **`10_data_management/fixer/.env`**, **or** put the same variables in the **repo root** `.env` (next to the `dsai` folder name on disk). Python drivers load **repo root first**, then **`fixer/.env`** (fixer overrides). Set `OLLAMA_API_KEY`, `OLLAMA_HOST`, `OLLAMA_MODEL`.
 
 ## Run order
 
@@ -59,6 +59,7 @@ Hands-on write-ups: **[`ACTIVITY_fixer_csv.md`](../ACTIVITY_fixer_csv.md)** and 
 
 ## Troubleshooting
 
+- **HTTP 401** on **`/api/chat`**: **`OLLAMA_API_KEY`** is missing, wrong, or expired. Create or rotate a key at [ollama.com/settings/keys](https://ollama.com/settings/keys) and put the **raw token** in **`fixer/.env`** (do **not** prefix with **`Bearer `** — the code adds that). Run **`python 10_data_management/fixer/testme.py`** or **`Rscript 10_data_management/fixer/testme.R`** to verify before the full batched scripts.
 - If **tool calls** never fire, try another cloud model or a smaller **ROWS_PER_BATCH** so each request sees fewer rows.
 - **HTTP 500** / **429** on batched scripts: try **FIXER_CHUNK_WORKERS=1** (sequential chunk requests) to reduce load on Ollama Cloud.
 - **HTTP 400** on **`fixer_csv`** (and related): Ollama Cloud may reject `options.num_predict`; scripts omit it unless you set **`FIXER_MAX_OUTPUT_TOKENS`** (digits only) in **`.env`**. If the error mentions JSON/`}` , ensure tool schemas use **`{}`** for empty `properties` (not `[]` — an R empty `list()` encodes as an array; in Python use **`{}`**).

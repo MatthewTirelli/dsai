@@ -16,9 +16,20 @@
 
 import os
 import sys
+from pathlib import Path
 
 import requests
 from dotenv import load_dotenv
+
+
+def _load_agentpy_env(agentpy_dir: str) -> None:
+    here = Path(agentpy_dir).resolve()
+    repo = here.parent.parent
+    rf, af = repo / ".env", here / ".env"
+    if rf.is_file():
+        load_dotenv(rf, override=False)
+    if af.is_file():
+        load_dotenv(af, override=False)
 
 
 def print_response(label: str, response: requests.Response) -> None:
@@ -38,7 +49,7 @@ def print_response(label: str, response: requests.Response) -> None:
 def main() -> None:
     _here = os.path.dirname(os.path.abspath(__file__))
     os.chdir(_here)
-    load_dotenv()
+    _load_agentpy_env(_here)
 
     base = os.getenv("AGENT_PUBLIC_URL", "").rstrip("/")
     if not base:

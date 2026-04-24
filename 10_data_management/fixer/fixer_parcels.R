@@ -81,6 +81,14 @@ cat("🔌 Sourcing fixer/functions.R ...\n")
 source(file.path(FIXER_ROOT, "functions.R"), local = FALSE)
 cat("   ✅ Helpers loaded.\n\n")
 
+OLLAMA_API_KEY = normalize_ollama_api_key(OLLAMA_API_KEY)
+if (!nzchar(OLLAMA_API_KEY)) {
+  stop(
+    "OLLAMA_API_KEY is missing or empty in fixer/.env. Copy .env.example to .env and set a key from https://ollama.com/settings/keys (raw token only; do not prefix with 'Bearer ').",
+    call. = FALSE
+  )
+}
+
 WGS84_CRS = 4326L
 
 ZONING_DATA_BLURB = paste0(

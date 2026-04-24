@@ -21,6 +21,11 @@ node_modules/
 10_data_management/agentr/logs/*
 !10_data_management/agentr/logs/.gitkeep
 10_data_management/fixer/.env
+# Accidental venv / path fragment dirs under agentpy (never commit)
+10_data_management/agentpy/#/
+10_data_management/agentpy/differ/
+10_data_management/agentpy/may/
+10_data_management/agentpy/path/
 z/
 10_data_management/agentpy/rsconnect-python/
 10_data_management/agentr/rsconnect/

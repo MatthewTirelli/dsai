@@ -23,8 +23,8 @@
 
 ## Quick start
 
-- Copy [`.env.example`](.env.example) → `.env` and set **`OLLAMA_API_KEY`**. Defaults target **Ollama Cloud** (`OLLAMA_HOST=https://ollama.com`, `OLLAMA_MODEL=nemotron-3-nano:30b-cloud`). Confirm the exact cloud tag in the [Ollama model library](https://ollama.com/library) if your key rejects a name.
-- Optional: set **`SERPER_API_KEY`** for live search (see [Serper](https://serper.dev)). Preflight and the **`web_search`** tool use [CrewAI](https://docs.crewai.com/) **`SerperDevTool`** (`pip` installs **`crewai[tools]`**—heavier than `httpx` alone). Without a key, preflight and the tool return a “search disabled” message; **`AGENT.md`** instructs the model not to invent URLs.
+- Set **`OLLAMA_API_KEY`** for **Ollama Cloud** in the **repo root** `.env` and/or **`10_data_management/agentpy/.env`**. The API loads **repo root first**, then **`agentpy/.env`**, with **`override=False`** so a blank `OLLAMA_API_KEY=` line in `agentpy/.env` does not erase a key defined at the repo root. Copy [`.env.example`](.env.example) → **`agentpy/.env`** when you want module-local settings. Defaults: `OLLAMA_HOST=https://ollama.com`, `OLLAMA_MODEL=nemotron-3-nano:30b-cloud`. Confirm the cloud model tag in the [Ollama model library](https://ollama.com/library) if your key rejects a name.
+- Optional: set **`SERPER_API_KEY`** for live search (see [Serper](https://serper.dev)). The **`web_search`** tool POSTs to Serper’s JSON API with **`httpx`** (no CrewAI dependency). Without a key, preflight and the tool return a “search disabled” message; **`AGENT.md`** instructs the model not to invent URLs.
 - `pip install -r` [`requirements.txt`](requirements.txt)
 - From this folder: `python -m uvicorn app.api:app --host 0.0.0.0 --port 8000`, or **`./runme.sh`**.
 - `GET http://127.0.0.1:8000/health` → should report `"ok": true` plus **`max_autonomous_turns`**, **`min_completion_turns`**, and related fields.
@@ -75,7 +75,7 @@ sequenceDiagram
 - **`app/api.py`** — FastAPI **`app`**: **`GET /health`**, **`POST /hooks/agent`**, **`POST /hooks/control`**. Imports **`run_research_loop`** from **`app/loop.py`**; startup configures optional file logging.
 - **`app/loop.py`** — Bounded Ollama **`/api/chat`** with **[tool calling](https://docs.ollama.com/capabilities/tool-calling)** (**`read_skill`**, **`web_search`**). Each model round counts toward the same cap (**`MAX_AUTONOMOUS_TURNS`**, **10** server-wide; optional lower **`max_turns`** per request) until **`END_BRIEF`** or **`paused_for_human`** + **`resume_token`**. Emits **`agent`** logger lines per turn (tool names, previews, outcomes).
 - **`app/context.py`** — Loads **[`AGENT.md`](AGENT.md)** (fallback string if missing) and appends a list of loadable **`skills/*.md`** names to the system message.
-- **`app/tools.py`** — Implements tools and truncates tool payloads (~**4k** chars). **`web_search`** uses CrewAI **`SerperDevTool`** and **`SERPER_API_KEY`**; **`read_skill`** uses **`guardrails.read_skill_file`**.
+- **`app/tools.py`** — Implements tools and truncates tool payloads (~**4k** chars). **`web_search`** calls Serper’s JSON API with **`httpx`** and **`SERPER_API_KEY`**; **`read_skill`** uses **`guardrails.read_skill_file`**.
 - **`app/guardrails.py`** — **`MAX_AUTONOMOUS_TURNS`** (**10**), **`MAX_WEB_SEARCHES_PER_REQUEST`** (**3**), **`MAX_SKILL_READS_PER_REQUEST`** (**8**), task size, safe **`skills/`** reads. Activity root = parent of **`app/`** (where **`AGENT.md`** lives).
 - **`app/logging_setup.py`** — Optional **`logs/agent.log`** (or path from **`AGENT_LOG_FILE`**); disable with **`AGENT_LOG_FILE=0`** (or **`off`** / empty). **`AGENT_LOG_LEVEL`** defaults to **`INFO`**. Task text may appear in logs—do not log in production with sensitive prompts unless you accept that risk.
 
@@ -130,7 +130,7 @@ For local-only development without a cloud key, point **`OLLAMA_HOST`** at **`ht
 | [`app/loop.py`](app/loop.py) | Ollama **`/api/chat`** loop + tool rounds + **`agent`** logger |
 | [`app/guardrails.py`](app/guardrails.py) | Turn cap, tool caps, **`skills/`** read policy |
 | [`app/context.py`](app/context.py) | Load **`AGENT.md`**, list skills for system prompt |
-| [`app/tools.py`](app/tools.py) | **`read_skill`**, **`web_search`** (CrewAI **SerperDevTool**) |
+| [`app/tools.py`](app/tools.py) | **`read_skill`**, **`web_search`** (Serper + **httpx**) |
 | [`app/logging_setup.py`](app/logging_setup.py) | Optional **`logs/agent.log`** file handler |
 | [`AGENT.md`](AGENT.md) | System instructions (editable) |
 | [`skills/`](skills/) | Markdown skills loaded via **`read_skill`** |

@@ -234,7 +234,7 @@ def run_research_loop(
     (see `prefetch_search_used`) nor the optional forced read_skill injection (see `forced_tool_round`).
     `min_completion_turns` (see guardrails) is the minimum LLM rounds before `END_BRIEF` is accepted; the loop
     may inject a verification user message if the model tries to finish early.
-    Web search uses CrewAI SerperDevTool; Ollama handles function calling for read_skill and web_search.
+    Web search uses Serper (httpx); Ollama handles function calling for read_skill and web_search.
     """
     configure_agent_logging()
     if not task_size_ok(task):

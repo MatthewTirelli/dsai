@@ -6,6 +6,7 @@ import os
 import uuid
 from contextlib import asynccontextmanager
 from dataclasses import dataclass, field
+from pathlib import Path
 from typing import Annotated, Any, Literal
 
 from dotenv import load_dotenv
@@ -19,7 +20,30 @@ from .logging_setup import configure_agent_logging
 
 # 0. CONFIGURATION ############################################################
 
-load_dotenv()
+
+def _normalize_ollama_api_key(raw: str) -> str:
+    ak = (raw or "").strip()
+    if ak.lower().startswith("bearer "):
+        ak = ak[7:].strip()
+    return ak
+
+
+def _load_agentpy_env() -> None:
+    """
+    Load ``dsai/.env`` then ``agentpy/.env``, both with ``override=False`` so an empty
+    ``OLLAMA_API_KEY=`` line in ``agentpy/.env`` does not wipe a real key from the repo root.
+    Variables already set (including from the shell) are left unchanged.
+    """
+    agentpy_root = Path(__file__).resolve().parent.parent
+    repo_root = agentpy_root.parent.parent
+    root_env, local_env = repo_root / ".env", agentpy_root / ".env"
+    if root_env.is_file():
+        load_dotenv(root_env, override=False)
+    if local_env.is_file():
+        load_dotenv(local_env, override=False)
+
+
+_load_agentpy_env()
 
 
 @asynccontextmanager
@@ -29,7 +53,7 @@ async def _lifespan(_app: FastAPI):
 
 
 OLLAMA_HOST = os.getenv("OLLAMA_HOST", "https://ollama.com").rstrip("/")
-OLLAMA_API_KEY = os.getenv("OLLAMA_API_KEY", "")
+OLLAMA_API_KEY = _normalize_ollama_api_key(os.getenv("OLLAMA_API_KEY", ""))
 OLLAMA_MODEL = os.getenv("OLLAMA_MODEL", "nemotron-3-nano:30b-cloud")
 
 _API_DESCRIPTION = """
@@ -45,7 +69,7 @@ Teaching API for a **disaster situational brief agent**: short, structured open-
 
 ### Runtime behavior
 
-- **Tools:** Ollama-native function calling; **web_search** uses CrewAI **SerperDevTool** (Serper API).
+- **Tools:** Ollama-native function calling; **web_search** uses Serper’s JSON API (**httpx**).
 - **Sessions:** omit `session_id` on the first request—the server **generates** a UUID and returns it.
 Reuse that `session_id` **only** when resuming after `paused_for_human`, together with the `resume_token`
 from that same response. Successful (`ok`) runs clear server-side session state, so the next brief starts fresh
@@ -328,7 +352,12 @@ async def hooks_agent(body: AgentBodyDep) -> JSONResponse:
                 "turn_cap": turn_cap,
                 "min_completion_turns": min(min_completion_turns(), turn_cap),
                 "session_id": body.session_id,
-                "detail": "OLLAMA_API_KEY is not set. Add it to .env for Ollama Cloud.",
+                "detail": (
+                    "OLLAMA_API_KEY is missing or empty. Set it in repo-root .env and/or "
+                    "10_data_management/agentpy/.env (name OLLAMA_API_KEY; raw token, no 'Bearer ' prefix), "
+                    "or export it before uvicorn. If the key is only in repo-root .env, delete or fix an "
+                    "empty OLLAMA_API_KEY= line in agentpy/.env so it does not block loading."
+                ),
             },
             status_code=500,
         )

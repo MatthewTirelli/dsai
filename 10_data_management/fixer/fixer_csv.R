@@ -88,6 +88,14 @@ cat("🔌 Sourcing fixer/functions.R ...\n")
 source(file.path(FIXER_ROOT, "functions.R"), local = FALSE)
 cat("   ✅ Helpers loaded.\n\n")
 
+OLLAMA_API_KEY = normalize_ollama_api_key(OLLAMA_API_KEY)
+if (!nzchar(OLLAMA_API_KEY)) {
+  stop(
+    "OLLAMA_API_KEY is missing or empty in fixer/.env. Copy .env.example to .env and set a key from https://ollama.com/settings/keys (raw token only; do not prefix with 'Bearer ').",
+    call. = FALSE
+  )
+}
+
 MAX_OUT = {
   et = stringr::str_trim(Sys.getenv("FIXER_MAX_OUTPUT_TOKENS", unset = ""))
   if (nzchar(et) && grepl("^[0-9]+$", et)) as.integer(et) else NULL

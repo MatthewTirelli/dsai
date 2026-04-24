@@ -1,5 +1,5 @@
 # tools.py
-# CrewAI SerperDevTool for web search + read_skill helpers for Ollama tool calling
+# Serper web search (httpx) + read_skill helpers for Ollama tool calling
 # Tim Fraser
 
 import json
@@ -7,9 +7,11 @@ import os
 import re
 from typing import Any
 
-from crewai_tools import SerperDevTool
+import httpx
 
 from .guardrails import read_skill_file
+
+_SERPER_URL = "https://google.serper.dev/search"
 
 # Keep tool payloads small so the chat context stays bounded.
 MAX_TOOL_OUTPUT_CHARS = 4000
@@ -174,7 +176,7 @@ def run_read_skill(filename: str) -> str:
 
 def run_web_search(query: str) -> str:
     """
-    Web search via CrewAI **SerperDevTool** (Serper API). Requires **SERPER_API_KEY**.
+    Web search via Serper’s Google JSON API (**httpx**). Requires **SERPER_API_KEY**.
     Prepends a **Retrieved URLs for References** block so the model can copy real links.
     """
     key = (os.getenv("SERPER_API_KEY") or "").strip()
@@ -192,12 +194,21 @@ def run_web_search(query: str) -> str:
         return "web_search error: empty query."
 
     try:
-        tool = SerperDevTool(n_results=5)
-        raw = tool.run(search_query=q)
+        with httpx.Client(timeout=30.0) as client:
+            resp = client.post(
+                _SERPER_URL,
+                headers={"X-API-KEY": key, "Content-Type": "application/json"},
+                json={"q": q, "num": 5},
+            )
+            resp.raise_for_status()
+            body = resp.text
+    except httpx.HTTPStatusError as exc:
+        detail = (exc.response.text or "").strip()[:500]
+        return f"web_search error: HTTP {exc.response.status_code} {detail}"
     except Exception as exc:  # noqa: BLE001 — tool output is user-facing text
         return f"web_search error: {exc}"
 
-    body = (str(raw).strip() if raw is not None else "") or "(No results.)"
+    body = (body or "").strip() or "(No results.)"
     pairs = _title_url_pairs_from_raw(body)
     ref_block = _reference_block_for_model(pairs)
     return _assemble_search_payload(ref_block, body)
