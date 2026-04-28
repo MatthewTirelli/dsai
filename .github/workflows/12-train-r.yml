@@ -1,9 +1,9 @@
 name: Model Training Job (R)
 
-on:
-  schedule:
-    - cron: '0 7 * * 1'   # weekly on Mondays at 7am UTC
-  workflow_dispatch:        # allow manual trigger
+# on:
+#   schedule:
+#     - cron: '0 7 * * 1'   # weekly on Mondays at 7am UTC
+#   workflow_dispatch:        # allow manual trigger
 
 concurrency:
   group: dsai-main-writers
